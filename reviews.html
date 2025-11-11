@@ -1,0 +1,80 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Google Reviews Widget (Iframe Compatible)</title>
+  <style>
+    body { margin:0; padding:0; font-family: system-ui, sans-serif; background:#fff; }
+    .wrap { max-width:680px; margin:0 auto; padding:16px; }
+    .card { border:1px solid #e5e7eb; border-radius:12px; padding:16px; box-shadow:0 6px 18px rgba(20,20,30,0.06); }
+    .header { display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; }
+    .title { font-size:1.1rem; font-weight:700; }
+    .rating { font-weight:600; }
+    .review { padding:12px; border-radius:10px; border:1px solid #eee; background:#fafafa; margin-bottom:10px; }
+    .meta { display:flex; justify-content:space-between; margin-bottom:6px; font-size:0.85rem; font-weight:600; }
+    .text { font-size:0.95rem; }
+    .more { text-align:center; margin-top:12px; }
+    .btn { padding:8px 12px; background:#f3f4f6; border-radius:8px; display:inline-block; font-weight:600; text-decoration:none; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card" id="widget">
+      <div class="header">
+        <div class="title">Google Reviews</div>
+        <div class="rating" id="avg">—</div>
+      </div>
+      <div id="reviews"></div>
+      <div class="more"><a id="gmaps" class="btn" target="_blank">Read More</a></div>
+    </div>
+  </div>
+
+<script>
+// YOUR API + PLACE ID
+const API_KEY = "AIzaSyChvb-uAdcjILUXCrYF3RDHU0BkQDr92bk";
+const PLACE_ID = "ChIJK50OScyGAI4RozwcJxI5xtI&q";
+
+// Load Google JS
+function loadScript(){
+  return new Promise((res, rej)=>{
+    const s=document.createElement('script');
+    s.src=`https://maps.googleapis.com/maps/api/js?key=${API_KEY}&libraries=places&callback=init`; 
+    s.async=true; s.onerror=rej; window.init=res;
+    document.head.appendChild(s);
+  });
+}
+
+function starStr(x){ return '★★★★★☆☆☆☆☆'.slice(5-Math.round(x),10-Math.round(x)); }
+
+async function run(){
+  await loadScript();
+  const mapDiv=document.createElement('div'); document.body.appendChild(mapDiv);
+  const map=new google.maps.Map(mapDiv);
+  const svc=new google.maps.places.PlacesService(map);
+
+  svc.getDetails({placeId:PLACE_ID,fields:['name','rating','reviews','url']},(p,s)=>{
+    if(s!=='OK'){
+      document.getElementById('reviews').innerHTML="<div class='review'>Could not load Google reviews</div>";
+      return;
+    }
+    document.getElementById('avg').textContent = p.rating.toFixed(1);
+    document.getElementById('gmaps').href = p.url;
+
+    const box=document.getElementById('reviews');
+    box.innerHTML="";
+
+    (p.reviews||[]).slice(0,5).forEach(r=>{
+      const d=document.createElement('div'); d.className='review';
+      const t=new Date(r.time*1000).toLocaleDateString();
+      d.innerHTML=`<div class='meta'><span>${r.author_name}</span><span>${starStr(r.rating)}</span></div>
+                   <div class='text'>${r.text}</div>`;
+      box.appendChild(d);
+    });
+  });
+}
+
+run();
+</script>
+</body>
+</html>
